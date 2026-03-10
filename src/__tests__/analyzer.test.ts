@@ -19,10 +19,9 @@ vi.mock('ai', () => ({
 	generateText: vi.fn(),
 }));
 
-// Import after mocks are registered
-const { analyzeRoutes } = await import('../analyzer.js');
-const { generateText } = await import('ai');
-const { createModel, getModelId } = await import('../providers/index.js');
+import { analyzeRoutes } from '../analyzer.js';
+import { generateText } from 'ai';
+import { createModel, getModelId } from '../providers/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,9 +71,9 @@ describe('analyzeRoutes', () => {
 
 	it('calls generateText when there is no exact JSDoc', async () => {
 		const pathItem = { get: { operationId: 'getUsers' } };
-		vi.mocked(generateText).mockResolvedValue({ text: JSON.stringify(pathItem) } as ReturnType<
+		vi.mocked(generateText).mockResolvedValue({ text: JSON.stringify(pathItem) } as Awaited<ReturnType<
 			typeof generateText
-		>);
+		>>);
 
 		const results = await analyzeRoutes([makeRoute()], defaultOptions);
 
@@ -90,9 +89,9 @@ describe('analyzeRoutes', () => {
 
 		try {
 			const pathItem = { get: { operationId: 'cachedOp' } };
-			vi.mocked(generateText).mockResolvedValue({ text: JSON.stringify(pathItem) } as ReturnType<
+			vi.mocked(generateText).mockResolvedValue({ text: JSON.stringify(pathItem) } as Awaited<ReturnType<
 				typeof generateText
-			>);
+			>>);
 
 			const cacheOptions = { ...defaultOptions, cache: true, cacheDir: tmpDir };
 			const route = makeRoute();
@@ -117,7 +116,7 @@ describe('analyzeRoutes', () => {
 		const pathItem = { get: { operationId: 'fenced' } };
 		vi.mocked(generateText).mockResolvedValue({
 			text: '```json\n' + JSON.stringify(pathItem) + '\n```',
-		} as ReturnType<typeof generateText>);
+		} as Awaited<ReturnType<typeof generateText>>);
 
 		const results = await analyzeRoutes([makeRoute()], defaultOptions);
 		expect(results[0].pathItem).toEqual(pathItem);
@@ -125,9 +124,9 @@ describe('analyzeRoutes', () => {
 
 	it('returns an empty PathItem and warns when LLM returns invalid JSON', async () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-		vi.mocked(generateText).mockResolvedValue({ text: 'not json at all' } as ReturnType<
+		vi.mocked(generateText).mockResolvedValue({ text: 'not json at all' } as Awaited<ReturnType<
 			typeof generateText
-		>);
+		>>);
 
 		const results = await analyzeRoutes([makeRoute()], defaultOptions);
 		expect(results[0].pathItem).toEqual({});
@@ -171,12 +170,12 @@ describe('analyzeRoutes', () => {
 		const routeB = makeRoute({ urlPath: '/api/posts', sourceCode: 'GET posts' });
 
 		vi.mocked(generateText)
-			.mockResolvedValueOnce({ text: '{"get":{"operationId":"listUsers"}}' } as ReturnType<
+			.mockResolvedValueOnce({ text: '{"get":{"operationId":"listUsers"}}' } as Awaited<ReturnType<
 				typeof generateText
-			>)
-			.mockResolvedValueOnce({ text: '{"get":{"operationId":"listPosts"}}' } as ReturnType<
+			>>)
+			.mockResolvedValueOnce({ text: '{"get":{"operationId":"listPosts"}}' } as Awaited<ReturnType<
 				typeof generateText
-			>);
+			>>);
 
 		const results = await analyzeRoutes([routeA, routeB], defaultOptions);
 
@@ -188,7 +187,7 @@ describe('analyzeRoutes', () => {
 
 	it('uses getModelId for the cache key', async () => {
 		vi.mocked(getModelId).mockReturnValue('claude-sonnet-4-6');
-		vi.mocked(generateText).mockResolvedValue({ text: '{}' } as ReturnType<typeof generateText>);
+		vi.mocked(generateText).mockResolvedValue({ text: '{}' } as Awaited<ReturnType<typeof generateText>>);
 
 		await analyzeRoutes([makeRoute()], { ...defaultOptions, provider: 'anthropic' });
 		expect(vi.mocked(getModelId)).toHaveBeenCalledWith('anthropic');
