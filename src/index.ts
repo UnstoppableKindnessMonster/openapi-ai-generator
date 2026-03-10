@@ -5,6 +5,7 @@ export { loadConfig, resolveConfig } from './config.js';
 export { assembleSpec, writeOutputFiles } from './generator.js';
 export { filePathToUrlPath, scanRoutes } from './scanner.js';
 
+import { resolve } from 'node:path';
 import type { OpenAPIGenConfig } from './config.js';
 
 import { analyzeRoutes } from './analyzer.js';
@@ -33,6 +34,14 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
 	// Allow CLI overrides
 	if (options.provider) config.provider = options.provider;
 	if (options.cache === false) config.cache = false;
+
+	// Load .env files before provider env vars are read
+	if (config.envFile !== false) {
+		const { config: dotenvConfig } = await import('dotenv');
+		for (const file of config.envFile) {
+			dotenvConfig({ path: resolve(cwd, file), override: false });
+		}
+	}
 
 	console.log(`[openapi-ai-generator] Scanning routes...`);
 	const routes = await scanRoutes(config.include, config.exclude, cwd);

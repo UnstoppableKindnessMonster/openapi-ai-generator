@@ -23,11 +23,17 @@ export interface OpenAPIGenConfig {
 	cacheDir?: string;
 	include?: string[];
 	exclude?: string[];
+	/**
+	 * Path(s) to .env files to load before running. Defaults to ['.env', '.env.local'].
+	 * Set to false to disable automatic .env loading.
+	 */
+	envFile?: string | string[] | false;
 }
 
-export interface ResolvedConfig extends Required<OpenAPIGenConfig> {
+export interface ResolvedConfig extends Omit<Required<OpenAPIGenConfig>, 'envFile'> {
 	output: Required<OpenAPIGenConfig['output']>;
 	openapi: Required<OpenAPIGenConfig['openapi']>;
+	envFile: string[] | false;
 }
 
 const defaults: Omit<ResolvedConfig, 'provider' | 'output' | 'openapi'> = {
@@ -36,12 +42,23 @@ const defaults: Omit<ResolvedConfig, 'provider' | 'output' | 'openapi'> = {
 	cacheDir: '.openapi-cache',
 	include: ['src/app/api/**/route.ts'],
 	exclude: [],
+	envFile: ['.env', '.env.local'],
 };
 
 export function resolveConfig(config: OpenAPIGenConfig): ResolvedConfig {
+	let envFile: string[] | false;
+	if (config.envFile === false) {
+		envFile = false;
+	} else if (typeof config.envFile === 'string') {
+		envFile = [config.envFile];
+	} else {
+		envFile = config.envFile ?? (defaults.envFile as string[]);
+	}
+
 	return {
 		...defaults,
 		...config,
+		envFile,
 		output: {
 			scalarDocs: false,
 			scalarPath: 'src/app/api/docs/route.ts',
@@ -91,25 +108,9 @@ async function importConfig(
 async function importTypeScriptConfig(
 	filePath: string,
 ): Promise<{ default?: OpenAPIGenConfig } & OpenAPIGenConfig> {
-	// Try dynamic import with tsx register if available
-	try {
-		// Check if tsx is available
-		await import('module');
-		// Use tsx/ts-node loader
-		const url = pathToFileURL(filePath).href;
-		return await import(url);
-	} catch {
-		// Fall back: try require with ts-node
-		try {
-			// eslint-disable-next-line @typescript-eslint/no-require-imports
-			require('ts-node/register');
-			// eslint-disable-next-line @typescript-eslint/no-require-imports
-			return require(filePath);
-		} catch {
-			throw new Error(
-				`Cannot load TypeScript config file: ${filePath}. ` +
-					'Install tsx or ts-node, or use a .js config file.',
-			);
-		}
-	}
+	// Use tsx (bundled as a dependency) to register CJS TypeScript hooks
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
+	require('tsx/cjs');
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
+	return require(filePath);
 }

@@ -1,6 +1,6 @@
 {
   "name": "openapi-ai-generator",
-  "version": "0.1.3",
+  "version": "0.1.2",
   "description": "Scan Next.js API routes and generate OpenAPI 3.1 specs using LLM analysis",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -37,7 +37,9 @@
     "@ai-sdk/openai": "^3.0.41",
     "ai": "^6.0.116",
     "commander": "^12.1.0",
+    "dotenv": "^17.3.1",
     "fast-glob": "^3.3.3",
+    "tsx": "^4.21.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
