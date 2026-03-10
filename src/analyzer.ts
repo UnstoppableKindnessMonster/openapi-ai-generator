@@ -1,7 +1,7 @@
 import type { LanguageModel } from "ai";
 import { generateText } from "ai";
 
-import type { JSDocMode, Provider } from "./config.js";
+import type { JSDocMode, Provider, ResolvedLimits } from "./config.js";
 import type { RouteInfo } from "./scanner.js";
 
 import { computeHash, RouteCache } from "./cache.js";
@@ -12,6 +12,7 @@ export interface AnalyzeOptions {
   jsdocMode: JSDocMode;
   cache: boolean;
   cacheDir: string;
+  limits: ResolvedLimits;
 }
 
 export interface AnalyzedRoute {
@@ -93,7 +94,12 @@ async function analyzeRoute(
   // Call LLM
   let pathItem: Record<string, unknown>;
   try {
-    pathItem = await callLLM(route, options.jsdocMode, getModel());
+    pathItem = await callLLM(
+      route,
+      options.jsdocMode,
+      getModel(),
+      options.limits,
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const isContentFilter =
@@ -158,12 +164,12 @@ ${jsDocSection}
 
 For each exported function named GET, POST, PUT, PATCH, or DELETE, document:
 - operationId: a unique camelCase identifier
-- summary: a short one-line description
+- summary: a short one-line description (max ~4 words, avoid starting with "Get", "Post", "Put", "Patch", "Delete", these are sometimes inferred from the operationId, and are sometimes in the format of "Create a ___", "Update a ___", "Delete a ___", "Get a ___", "List ___")
 - description: a fuller explanation of what the endpoint does
 - parameters: path params from URL segments like {id}, and query params from searchParams usage
 - requestBody: schema inferred from request.json() calls and TypeScript types (POST/PUT/PATCH only)
 - responses: per status code, inferred from NextResponse.json() calls and return type annotations
-- tags: inferred from the URL path segments
+- tags: inferred from the URL path segments, but typically only one tag should be used. If more than one exists, they show up in multiple categories, and that can be confusing. If there's a question, use the more specific option.
 - security: noted if the code checks for auth tokens, session cookies, or middleware guards
 
 ## Output format
@@ -175,6 +181,7 @@ async function callLLM(
   route: RouteInfo,
   jsdocMode: JSDocMode,
   model: LanguageModel,
+  limits: ResolvedLimits,
 ): Promise<Record<string, unknown>> {
   const prompt = buildPrompt(route, jsdocMode);
 
@@ -182,6 +189,8 @@ async function callLLM(
     model,
     prompt,
     temperature: 0,
+    maxOutputTokens: limits.maxTokens,
+    abortSignal: AbortSignal.timeout(limits.timeoutMs),
   });
 
   return parsePathItem(text, route.urlPath);
