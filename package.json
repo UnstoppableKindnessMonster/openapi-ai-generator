@@ -1,6 +1,6 @@
 {
   "name": "openapi-ai-generator",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Scan Next.js API routes and generate OpenAPI 3.1 specs using LLM analysis",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
