@@ -122,6 +122,7 @@ export function GET() {
     <script
       id="api-reference"
       data-url="${specUrl}"
+      ${config.output.scalarConfig && Object.keys(config.output.scalarConfig).length > 0 ? `data-config="${JSON.stringify(config.output.scalarConfig)}"` : ""}
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>

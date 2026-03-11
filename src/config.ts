@@ -11,6 +11,7 @@ export interface OpenAPIGenConfig {
     specPath: string;
     scalarDocs?: boolean;
     scalarPath?: string;
+    scalarConfig?: Record<string, unknown>;
   };
   openapi: {
     title: string;
@@ -102,6 +103,7 @@ export function resolveConfig(config: OpenAPIGenConfig): ResolvedConfig {
     output: {
       scalarDocs: false,
       scalarPath: "src/app/api/docs/route.ts",
+      scalarConfig: {},
       ...config.output,
     },
     openapi: {
